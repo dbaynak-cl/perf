@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package perf_test
+package perf
 
 import (
 	"context"
@@ -10,23 +10,21 @@ import (
 	"log"
 	"runtime"
 
-	"acln.ro/perf"
-
 	"golang.org/x/sys/unix"
 )
 
 func ExampleHardwareCounter_iPC() {
-	g := perf.Group{
-		CountFormat: perf.CountFormat{
+	g := Group{
+		CountFormat: CountFormat{
 			Running: true,
 		},
 	}
-	g.Add(perf.Instructions, perf.CPUCycles)
+	g.Add(Instructions, CPUCycles)
 
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	ipc, err := g.Open(perf.CallingThread, perf.AnyCPU)
+	ipc, err := g.Open(CallingThread, AnyCPU)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -49,13 +47,13 @@ func ExampleHardwareCounter_iPC() {
 }
 
 func ExampleSoftwareCounter_pageFaults() {
-	pfa := new(perf.Attr)
-	perf.PageFaults.Configure(pfa)
+	pfa := new(Attr)
+	PageFaults.Configure(pfa)
 
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	faults, err := perf.Open(pfa, perf.CallingThread, perf.AnyCPU, nil)
+	faults, err := Open(pfa, CallingThread, AnyCPU, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -77,8 +75,8 @@ func ExampleSoftwareCounter_pageFaults() {
 }
 
 func ExampleTracepoint_getpid() {
-	ga := new(perf.Attr)
-	gtp := perf.Tracepoint("syscalls", "sys_enter_getpid")
+	ga := new(Attr)
+	gtp := Tracepoint("syscalls", "sys_enter_getpid")
 	if err := gtp.Configure(ga); err != nil {
 		log.Fatal(err)
 	}
@@ -86,7 +84,7 @@ func ExampleTracepoint_getpid() {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	getpid, err := perf.Open(ga, perf.CallingThread, perf.AnyCPU, nil)
+	getpid, err := Open(ga, CallingThread, AnyCPU, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -109,16 +107,16 @@ func ExampleTracepoint_getpid() {
 func ExampleMmapRecord_plugin() {
 	var targetpid int // pid of the monitored process
 
-	da := &perf.Attr{
-		Options: perf.Options{
+	da := &Attr{
+		Options: Options{
 			Mmap: true,
 		},
 	}
 	da.SetSamplePeriod(1)
 	da.SetWakeupEvents(1)
-	perf.Dummy.Configure(da) // configure a dummy event, so we can Open it
+	Dummy.Configure(da) // configure a dummy event, so we can Open it
 
-	mmap, err := perf.Open(da, targetpid, perf.AnyCPU, nil)
+	mmap, err := Open(da, targetpid, AnyCPU, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -134,7 +132,7 @@ func ExampleMmapRecord_plugin() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		mr, ok := rec.(*perf.MmapRecord)
+		mr, ok := rec.(*MmapRecord)
 		if !ok {
 			continue
 		}

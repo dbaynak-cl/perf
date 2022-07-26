@@ -1,10 +1,8 @@
-package perf_test
+package perf
 
 import (
 	"os/exec"
 	"testing"
-
-	"acln.ro/perf"
 )
 
 func TestCommand(t *testing.T) {
@@ -12,17 +10,17 @@ func TestCommand(t *testing.T) {
 
 	cmd := exec.Command("echo", "hello world")
 
-	fa := &perf.Attr{
-		CountFormat: perf.CountFormat{
+	fa := &Attr{
+		CountFormat: CountFormat{
 			Running: true,
 			ID:      true,
 		},
 	}
-	perf.Instructions.Configure(fa)
+	Instructions.Configure(fa)
 	fa.Options.ExcludeKernel = true
 	fa.Options.ExcludeHypervisor = true
 
-	count, err := perf.Command(fa, cmd, perf.AnyCPU, nil)
+	count, err := Command(fa, cmd, AnyCPU, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,16 +39,16 @@ func TestCommandGroup(t *testing.T) {
 
 	cmd := exec.Command("echo", "hello world")
 
-	var g perf.Group
-	g.CountFormat = perf.CountFormat{
+	var g Group
+	g.CountFormat = CountFormat{
 		Running: true,
 		ID:      true,
 	}
 	g.Options.ExcludeKernel = true
 	g.Options.ExcludeHypervisor = true
-	g.Add(perf.Instructions, perf.CPUCycles)
+	g.Add(Instructions, CPUCycles)
 
-	counts, err := g.Command(cmd, perf.AnyCPU)
+	counts, err := g.Command(cmd, AnyCPU)
 	if err != nil {
 		t.Fatal(err)
 	}

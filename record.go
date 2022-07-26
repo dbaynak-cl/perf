@@ -371,6 +371,28 @@ func (sf SampleFormat) marshal() uint64 {
 	return marshalBitwiseUint64(fields)
 }
 
+func (sf SampleFormat) sizeof() (s int) {
+	if sf.Tid {
+		s += 8
+	}
+	if sf.Time {
+		s += 8
+	}
+	if sf.ID {
+		s += 8
+	}
+	if sf.StreamID {
+		s += 8
+	}
+	if sf.CPU {
+		s += 8
+	}
+	if sf.Identifier {
+		s += 8
+	}
+	return s
+}
+
 // SampleID contains identifiers for when and where a record was collected.
 //
 // A SampleID is included in a Record if Options.SampleIDAll is set on the
@@ -528,7 +550,9 @@ func (mr *MmapRecord) DecodeFrom(raw *RawRecord, ev *Event) {
 	f.uint64(&mr.Len)
 	f.uint64(&mr.PageOffset)
 	f.string(&mr.Filename)
-	f.idCond(ev.a.Options.SampleIDAll, &mr.SampleID, ev.a.SampleFormat)
+	f2 := raw.fields()
+	f3 := f2[len(f2)-ev.a.SampleFormat.sizeof():]
+	f3.idCond(ev.a.Options.SampleIDAll, &mr.SampleID, ev.a.SampleFormat)
 }
 
 // Executable returns a boolean indicating whether the mapping is executable.
@@ -569,7 +593,9 @@ func (cr *CommRecord) DecodeFrom(raw *RawRecord, ev *Event) {
 	f := raw.fields()
 	f.uint32(&cr.Pid, &cr.Tid)
 	f.string(&cr.NewName)
-	f.idCond(ev.a.Options.SampleIDAll, &cr.SampleID, ev.a.SampleFormat)
+	f2 := raw.fields()
+	f3 := f2[len(f2)-ev.a.SampleFormat.sizeof():]
+	f3.idCond(ev.a.Options.SampleIDAll, &cr.SampleID, ev.a.SampleFormat)
 }
 
 // commExecBit is PERF_RECORD_MISC_COMM_EXEC

@@ -2,15 +2,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package perf_test
+package perf
 
 import (
 	"context"
 	"runtime"
 	"testing"
 	"time"
-
-	"acln.ro/perf"
 )
 
 func TestGroup(t *testing.T) {
@@ -21,21 +19,21 @@ func TestGroup(t *testing.T) {
 func testGroupCount(t *testing.T) {
 	requires(t, paranoid(1), hardwarePMU, softwarePMU)
 
-	da := new(perf.Attr)
-	perf.Dummy.Configure(da)
+	da := new(Attr)
+	Dummy.Configure(da)
 
-	g := perf.Group{
-		CountFormat: perf.CountFormat{
+	g := Group{
+		CountFormat: CountFormat{
 			Enabled: true,
 			Running: true,
 		},
 	}
-	g.Add(perf.CPUCycles, perf.Instructions, da)
+	g.Add(CPUCycles, Instructions, da)
 
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	ev, err := g.Open(perf.CallingThread, perf.AnyCPU)
+	ev, err := g.Open(CallingThread, AnyCPU)
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
@@ -56,11 +54,11 @@ func testGroupCount(t *testing.T) {
 func testGroupRecord(t *testing.T) {
 	requires(t, tracepointPMU, debugfs) // TODO(acln): paranoid
 
-	ga := &perf.Attr{
-		Options: perf.Options{
+	ga := &Attr{
+		Options: Options{
 			Disabled: true,
 		},
-		SampleFormat: perf.SampleFormat{
+		SampleFormat: SampleFormat{
 			Tid:      true,
 			Time:     true,
 			CPU:      true,
@@ -70,13 +68,13 @@ func testGroupRecord(t *testing.T) {
 	}
 	ga.SetSamplePeriod(1)
 	ga.SetWakeupEvents(1)
-	gtp := perf.Tracepoint("syscalls", "sys_enter_getpid")
+	gtp := Tracepoint("syscalls", "sys_enter_getpid")
 	if err := gtp.Configure(ga); err != nil {
 		t.Fatal(err)
 	}
 
-	wa := &perf.Attr{
-		SampleFormat: perf.SampleFormat{
+	wa := &Attr{
+		SampleFormat: SampleFormat{
 			Tid:      true,
 			Time:     true,
 			CPU:      true,
@@ -86,13 +84,13 @@ func testGroupRecord(t *testing.T) {
 	}
 	wa.SetSamplePeriod(1)
 	wa.SetWakeupEvents(1)
-	wtp := perf.Tracepoint("syscalls", "sys_enter_write")
+	wtp := Tracepoint("syscalls", "sys_enter_write")
 	if err := wtp.Configure(wa); err != nil {
 		t.Fatal(err)
 	}
 
-	g := perf.Group{
-		CountFormat: perf.CountFormat{
+	g := Group{
+		CountFormat: CountFormat{
 			Enabled: true,
 			Running: true,
 		},
@@ -102,7 +100,7 @@ func testGroupRecord(t *testing.T) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	ev, err := g.Open(perf.CallingThread, perf.AnyCPU)
+	ev, err := g.Open(CallingThread, AnyCPU)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,18 +126,18 @@ func testGroupRecord(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gsr, ok := grec.(*perf.SampleGroupRecord)
+	gsr, ok := grec.(*SampleGroupRecord)
 	if !ok {
-		t.Fatalf("got %T, want *perf.SampleGroupRecord", grec)
+		t.Fatalf("got %T, want *SampleGroupRecord", grec)
 	}
 
 	wrec, err := ev.ReadRecord(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	wsr, ok := wrec.(*perf.SampleGroupRecord)
+	wsr, ok := wrec.(*SampleGroupRecord)
 	if !ok {
-		t.Fatalf("got %T, want *perf.SampleGroupRecord", wrec)
+		t.Fatalf("got %T, want *SampleGroupRecord", wrec)
 	}
 
 	if gip, wip := gsr.IP, wsr.IP; gip == wip {

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package perf_test
+package perf
 
 import (
 	"context"
@@ -15,8 +15,6 @@ import (
 	"testing"
 	"time"
 	"unsafe"
-
-	"acln.ro/perf"
 
 	"golang.org/x/sys/unix"
 )
@@ -45,10 +43,10 @@ func testPoll(t *testing.T) {
 func testPollTimeout(t *testing.T) {
 	requires(t, paranoid(1), tracepointPMU, debugfs)
 
-	ga := new(perf.Attr)
+	ga := new(Attr)
 	ga.SetSamplePeriod(1)
 	ga.SetWakeupEvents(1)
-	gtp := perf.Tracepoint("syscalls", "sys_enter_getpid")
+	gtp := Tracepoint("syscalls", "sys_enter_getpid")
 	if err := gtp.Configure(ga); err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +54,7 @@ func testPollTimeout(t *testing.T) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	getpid, err := perf.Open(ga, perf.CallingThread, perf.AnyCPU, nil)
+	getpid, err := Open(ga, CallingThread, AnyCPU, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,10 +110,10 @@ func testPollTimeout(t *testing.T) {
 func testPollCancel(t *testing.T) {
 	requires(t, paranoid(1), tracepointPMU, debugfs)
 
-	ga := new(perf.Attr)
+	ga := new(Attr)
 	ga.SetSamplePeriod(1)
 	ga.SetWakeupEvents(1)
-	gtp := perf.Tracepoint("syscalls", "sys_enter_getpid")
+	gtp := Tracepoint("syscalls", "sys_enter_getpid")
 	if err := gtp.Configure(ga); err != nil {
 		t.Fatal(err)
 	}
@@ -123,7 +121,7 @@ func testPollCancel(t *testing.T) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	getpid, err := perf.Open(ga, perf.CallingThread, perf.AnyCPU, nil)
+	getpid, err := Open(ga, CallingThread, AnyCPU, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,13 +178,13 @@ func testPollCancel(t *testing.T) {
 func testPollExpired(t *testing.T) {
 	requires(t, paranoid(1), softwarePMU)
 
-	da := new(perf.Attr)
-	perf.Dummy.Configure(da)
+	da := new(Attr)
+	Dummy.Configure(da)
 
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	dummy, err := perf.Open(da, perf.CallingThread, perf.AnyCPU, nil)
+	dummy, err := Open(da, CallingThread, AnyCPU, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -272,17 +270,17 @@ func testPollDisabledByExit(t *testing.T) {
 	}
 
 	// Set up performance monitoring for the child process.
-	ga := &perf.Attr{
-		Options: perf.Options{
+	ga := &Attr{
+		Options: Options{
 			Disabled: true,
 		},
-		SampleFormat: perf.SampleFormat{
+		SampleFormat: SampleFormat{
 			Tid: true,
 		},
 	}
 	ga.SetSamplePeriod(1)
 	ga.SetWakeupEvents(1)
-	gtp := perf.Tracepoint("syscalls", "sys_enter_getpid")
+	gtp := Tracepoint("syscalls", "sys_enter_getpid")
 	if err := gtp.Configure(ga); err != nil {
 		t.Fatal(err)
 	}
@@ -290,7 +288,7 @@ func testPollDisabledByExit(t *testing.T) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	getpid, err := perf.Open(ga, cmd.Process.Pid, perf.AnyCPU, nil)
+	getpid, err := Open(ga, cmd.Process.Pid, AnyCPU, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -326,16 +324,16 @@ func testPollDisabledByExit(t *testing.T) {
 	if err1 != nil {
 		t.Errorf("first error was %v, want nil", err1)
 	}
-	sr, ok := rec1.(*perf.SampleRecord)
+	sr, ok := rec1.(*SampleRecord)
 	if !ok {
-		t.Errorf("first record: got %T, want *perf.SampleRecord", rec1)
+		t.Errorf("first record: got %T, want *SampleRecord", rec1)
 	}
 	if int(sr.Pid) != cmd.Process.Pid {
 		t.Errorf("first record: got pid %d in the sample, want %d",
 			sr.Pid, cmd.Process.Pid)
 	}
 
-	if err2 != perf.ErrDisabled {
+	if err2 != ErrDisabled {
 		t.Errorf("second record: error was %v, want ErrDisabled", err2)
 	}
 	if rec2 != nil {
@@ -346,17 +344,17 @@ func testPollDisabledByExit(t *testing.T) {
 func testPollDisabledExplicitly(t *testing.T) {
 	requires(t, paranoid(1), tracepointPMU, debugfs)
 
-	ga := &perf.Attr{
-		SampleFormat: perf.SampleFormat{
+	ga := &Attr{
+		SampleFormat: SampleFormat{
 			Tid: true,
 		},
-		Options: perf.Options{
+		Options: Options{
 			Disabled: true,
 		},
 	}
 	ga.SetSamplePeriod(1)
 	ga.SetWakeupEvents(1)
-	gtp := perf.Tracepoint("syscalls", "sys_enter_getpid")
+	gtp := Tracepoint("syscalls", "sys_enter_getpid")
 	if err := gtp.Configure(ga); err != nil {
 		t.Fatal(err)
 	}
@@ -364,7 +362,7 @@ func testPollDisabledExplicitly(t *testing.T) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	getpid, err := perf.Open(ga, perf.CallingThread, perf.AnyCPU, nil)
+	getpid, err := Open(ga, CallingThread, AnyCPU, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -428,17 +426,17 @@ func testPollDisabledByRefresh(t *testing.T) {
 	// things as-is.
 	requires(t, paranoid(1), tracepointPMU, debugfs)
 
-	ga := &perf.Attr{
-		SampleFormat: perf.SampleFormat{
+	ga := &Attr{
+		SampleFormat: SampleFormat{
 			Tid: true,
 		},
-		Options: perf.Options{
+		Options: Options{
 			Disabled: true,
 		},
 	}
 	ga.SetSamplePeriod(1)
 	ga.SetWakeupEvents(1)
-	gtp := perf.Tracepoint("syscalls", "sys_enter_getpid")
+	gtp := Tracepoint("syscalls", "sys_enter_getpid")
 	if err := gtp.Configure(ga); err != nil {
 		t.Fatal(err)
 	}
@@ -446,7 +444,7 @@ func testPollDisabledByRefresh(t *testing.T) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	getpid, err := perf.Open(ga, perf.CallingThread, perf.AnyCPU, nil)
+	getpid, err := Open(ga, CallingThread, AnyCPU, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -584,23 +582,23 @@ func testComm(t *testing.T) {
 	}
 
 	// Set up performance monitoring for the child process.
-	ca := &perf.Attr{
-		Options: perf.Options{
+	ca := &Attr{
+		Options: Options{
 			Disabled: true,
 			Comm:     true,
 		},
-		SampleFormat: perf.SampleFormat{
+		SampleFormat: SampleFormat{
 			Tid: true,
 		},
 	}
 	ca.SetSamplePeriod(1)
 	ca.SetWakeupEvents(1)
-	perf.Dummy.Configure(ca)
+	Dummy.Configure(ca)
 
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	comm, err := perf.Open(ca, cmd.Process.Pid, perf.AnyCPU, nil)
+	comm, err := Open(ca, cmd.Process.Pid, AnyCPU, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -635,9 +633,9 @@ func testComm(t *testing.T) {
 	if rerr != nil {
 		t.Fatalf("got %v, want valid record", rerr)
 	}
-	cr, ok := rec.(*perf.CommRecord)
+	cr, ok := rec.(*CommRecord)
 	if !ok {
-		t.Fatalf("got %T, want *perf.CommRecord", rec)
+		t.Fatalf("got %T, want *CommRecord", rec)
 	}
 	if int(cr.Pid) != cmd.Process.Pid {
 		t.Errorf("got pid %d, want %d", cr.Pid, cmd.Process.Pid)
@@ -706,23 +704,23 @@ func testExit(t *testing.T) {
 	pid := cmd.Process.Pid
 
 	// Set up performance monitoring for the child process.
-	ca := &perf.Attr{
-		Options: perf.Options{
+	ca := &Attr{
+		Options: Options{
 			Disabled: true,
 			Task:     true,
 		},
-		SampleFormat: perf.SampleFormat{
+		SampleFormat: SampleFormat{
 			Tid: true,
 		},
 	}
 	ca.SetSamplePeriod(1)
 	ca.SetWakeupEvents(1)
-	perf.Dummy.Configure(ca)
+	Dummy.Configure(ca)
 
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	comm, err := perf.Open(ca, pid, perf.AnyCPU, nil)
+	comm, err := Open(ca, pid, AnyCPU, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -761,9 +759,9 @@ func testExit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got %v, want valid record", err)
 	}
-	er, ok := rec.(*perf.ExitRecord)
+	er, ok := rec.(*ExitRecord)
 	if !ok {
-		t.Fatalf("got %T, want *perf.ExitRecord", rec)
+		t.Fatalf("got %T, want *ExitRecord", rec)
 	}
 	if int(er.Pid) != pid {
 		t.Errorf("got pid %d, want %d", er.Pid, pid)
@@ -828,8 +826,8 @@ func testCPUWideSwitch(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sa := &perf.Attr{
-		Options: perf.Options{
+	sa := &Attr{
+		Options: Options{
 			ExcludeKernel: true,
 			Disabled:      true,
 			ContextSwitch: true,
@@ -837,9 +835,9 @@ func testCPUWideSwitch(t *testing.T) {
 	}
 	sa.SetSamplePeriod(1)
 	sa.SetWakeupEvents(1)
-	perf.ContextSwitches.Configure(sa)
+	ContextSwitches.Configure(sa)
 
-	switches, err := perf.Open(sa, perf.AllThreads, cpu, nil)
+	switches, err := Open(sa, AllThreads, cpu, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -876,9 +874,9 @@ func testCPUWideSwitch(t *testing.T) {
 			rerr = err
 			break
 		}
-		sr, ok := rec.(*perf.SwitchCPUWideRecord)
+		sr, ok := rec.(*SwitchCPUWideRecord)
 		if !ok {
-			t.Errorf("got %T, want *perf.SwitchCPUWideRecord", rec)
+			t.Errorf("got %T, want *SwitchCPUWideRecord", rec)
 		}
 		switch {
 		case sr.Pid == 0:
@@ -915,14 +913,14 @@ func testCPUWideSwitch(t *testing.T) {
 func testSampleGetpid(t *testing.T) {
 	requires(t, paranoid(1), tracepointPMU, debugfs)
 
-	ga := &perf.Attr{
-		SampleFormat: perf.SampleFormat{
+	ga := &Attr{
+		SampleFormat: SampleFormat{
 			Tid: true,
 		},
 	}
 	ga.SetSamplePeriod(1)
 	ga.SetWakeupEvents(1)
-	gtp := perf.Tracepoint("syscalls", "sys_enter_getpid")
+	gtp := Tracepoint("syscalls", "sys_enter_getpid")
 	if err := gtp.Configure(ga); err != nil {
 		t.Fatal(err)
 	}
@@ -930,7 +928,7 @@ func testSampleGetpid(t *testing.T) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	getpid, err := perf.Open(ga, perf.CallingThread, perf.AnyCPU, nil)
+	getpid, err := Open(ga, CallingThread, AnyCPU, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -953,7 +951,7 @@ func testSampleGetpid(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got %v, want a valid sample record", err)
 	}
-	sr, ok := rec.(*perf.SampleRecord)
+	sr, ok := rec.(*SampleRecord)
 	if !ok {
 		t.Fatalf("got a %T, want a SampleRecord", rec)
 	}
@@ -966,14 +964,14 @@ func testSampleGetpid(t *testing.T) {
 func testSampleGetpidConcurrent(t *testing.T) {
 	requires(t, paranoid(1), tracepointPMU, debugfs)
 
-	ga := &perf.Attr{
-		SampleFormat: perf.SampleFormat{
+	ga := &Attr{
+		SampleFormat: SampleFormat{
 			Tid: true,
 		},
 	}
 	ga.SetSamplePeriod(1)
 	ga.SetWakeupEvents(1)
-	gtp := perf.Tracepoint("syscalls", "sys_enter_getpid")
+	gtp := Tracepoint("syscalls", "sys_enter_getpid")
 	if err := gtp.Configure(ga); err != nil {
 		t.Fatal(err)
 	}
@@ -981,7 +979,7 @@ func testSampleGetpidConcurrent(t *testing.T) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	getpid, err := perf.Open(ga, perf.CallingThread, perf.AnyCPU, nil)
+	getpid, err := Open(ga, CallingThread, AnyCPU, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -998,7 +996,7 @@ func testSampleGetpidConcurrent(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 			defer cancel()
 			rec, err := getpid.ReadRecord(ctx)
-			_, isSample := rec.(*perf.SampleRecord)
+			_, isSample := rec.(*SampleRecord)
 			if err == nil && isSample {
 				sawSample <- true
 			} else {
@@ -1031,11 +1029,11 @@ func testSampleGetpidConcurrent(t *testing.T) {
 func testSampleTracepointStack(t *testing.T) {
 	requires(t, paranoid(1), tracepointPMU, debugfs)
 
-	ga := &perf.Attr{
-		Options: perf.Options{
+	ga := &Attr{
+		Options: Options{
 			Disabled: true,
 		},
-		SampleFormat: perf.SampleFormat{
+		SampleFormat: SampleFormat{
 			Tid:       true,
 			Time:      true,
 			CPU:       true,
@@ -1045,7 +1043,7 @@ func testSampleTracepointStack(t *testing.T) {
 	}
 	ga.SetSamplePeriod(1)
 	ga.SetWakeupEvents(1)
-	gtp := perf.Tracepoint("syscalls", "sys_enter_getpid")
+	gtp := Tracepoint("syscalls", "sys_enter_getpid")
 	if err := gtp.Configure(ga); err != nil {
 		t.Fatal(err)
 	}
@@ -1053,7 +1051,7 @@ func testSampleTracepointStack(t *testing.T) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	getpid, err := perf.Open(ga, perf.CallingThread, perf.AnyCPU, nil)
+	getpid, err := Open(ga, CallingThread, AnyCPU, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1084,7 +1082,7 @@ func testSampleTracepointStack(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	getpidsample, ok := rec.(*perf.SampleRecord)
+	getpidsample, ok := rec.(*SampleRecord)
 	if !ok {
 		t.Fatalf("got a %T, want a *SampleRecord", rec)
 	}
@@ -1128,24 +1126,24 @@ func testSampleTracepointStack(t *testing.T) {
 func testRedirectManualWire(t *testing.T) {
 	requires(t, paranoid(1), tracepointPMU, debugfs)
 
-	ga := &perf.Attr{
-		SampleFormat: perf.SampleFormat{
+	ga := &Attr{
+		SampleFormat: SampleFormat{
 			Tid:      true,
 			Time:     true,
 			CPU:      true,
 			Addr:     true,
 			StreamID: true,
 		},
-		CountFormat: perf.CountFormat{
+		CountFormat: CountFormat{
 			Group: true,
 		},
-		Options: perf.Options{
+		Options: Options{
 			Disabled: true,
 		},
 	}
 	ga.SetSamplePeriod(1)
 	ga.SetWakeupEvents(1)
-	gtp := perf.Tracepoint("syscalls", "sys_enter_getpid")
+	gtp := Tracepoint("syscalls", "sys_enter_getpid")
 	if err := gtp.Configure(ga); err != nil {
 		t.Fatalf("Configure: %v", err)
 	}
@@ -1153,7 +1151,7 @@ func testRedirectManualWire(t *testing.T) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	leader, err := perf.Open(ga, perf.CallingThread, perf.AnyCPU, nil)
+	leader, err := Open(ga, CallingThread, AnyCPU, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1162,8 +1160,8 @@ func testRedirectManualWire(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wa := &perf.Attr{
-		SampleFormat: perf.SampleFormat{
+	wa := &Attr{
+		SampleFormat: SampleFormat{
 			Tid:      true,
 			Time:     true,
 			CPU:      true,
@@ -1173,12 +1171,12 @@ func testRedirectManualWire(t *testing.T) {
 	}
 	wa.SetSamplePeriod(1)
 	wa.SetWakeupEvents(1)
-	wtp := perf.Tracepoint("syscalls", "sys_enter_write")
+	wtp := Tracepoint("syscalls", "sys_enter_write")
 	if err := wtp.Configure(wa); err != nil {
 		t.Fatal(err)
 	}
 
-	follower, err := perf.Open(wa, perf.CallingThread, perf.AnyCPU, leader)
+	follower, err := Open(wa, CallingThread, AnyCPU, leader)
 	if err != nil {
 		t.Fatal(err)
 	}

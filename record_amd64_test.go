@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package perf_test
+package perf
 
 import (
 	"context"
@@ -11,22 +11,20 @@ import (
 	"testing"
 	"time"
 	"unsafe"
-
-	"acln.ro/perf"
 )
 
 func TestSampleUserRegisters(t *testing.T) {
 	requires(t, tracepointPMU, debugfs) // TODO(acln): paranoid
 
-	wea := &perf.Attr{
-		CountFormat: perf.CountFormat{
+	wea := &Attr{
+		CountFormat: CountFormat{
 			Group: true,
 		},
-		SampleFormat: perf.SampleFormat{
+		SampleFormat: SampleFormat{
 			StreamID:      true,
 			UserRegisters: true,
 		},
-		Options: perf.Options{
+		Options: Options{
 			SampleIDAll: true,
 		},
 		// RDI, RSI, RDX. See arch/x86/include/uapi/asm/perf_regs.h.
@@ -34,17 +32,17 @@ func TestSampleUserRegisters(t *testing.T) {
 	}
 	wea.SetSamplePeriod(1)
 	wea.SetWakeupEvents(1)
-	wetp := perf.Tracepoint("syscalls", "sys_enter_write")
+	wetp := Tracepoint("syscalls", "sys_enter_write")
 	if err := wetp.Configure(wea); err != nil {
 		t.Fatal(err)
 	}
 
-	wxa := &perf.Attr{
-		SampleFormat: perf.SampleFormat{
+	wxa := &Attr{
+		SampleFormat: SampleFormat{
 			StreamID:      true,
 			UserRegisters: true,
 		},
-		Options: perf.Options{
+		Options: Options{
 			SampleIDAll: true,
 		},
 		// RAX. See arch/x86/include/uapi/asm/perf_regs.h.
@@ -52,18 +50,18 @@ func TestSampleUserRegisters(t *testing.T) {
 	}
 	wxa.SetSamplePeriod(1)
 	wxa.SetWakeupEvents(1)
-	wxtp := perf.Tracepoint("syscalls", "sys_exit_write")
+	wxtp := Tracepoint("syscalls", "sys_exit_write")
 	if err := wxtp.Configure(wxa); err != nil {
 		t.Fatal(err)
 	}
 
-	var g perf.Group
+	var g Group
 	g.Add(wea, wxa)
 
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	write, err := g.Open(perf.CallingThread, perf.AnyCPU)
+	write, err := g.Open(CallingThread, AnyCPU)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,9 +99,9 @@ func TestSampleUserRegisters(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got %v, want a valid record", err)
 	}
-	entrysr, ok := entryrec.(*perf.SampleGroupRecord)
+	entrysr, ok := entryrec.(*SampleGroupRecord)
 	if !ok {
-		t.Fatalf("got %T, want *perf.SampleGroupRecord", entryrec)
+		t.Fatalf("got %T, want *SampleGroupRecord", entryrec)
 	}
 	if nregs := len(entrysr.UserRegisters); nregs != 3 {
 		t.Fatalf("got %d registers, want 3", nregs)
@@ -133,7 +131,7 @@ func TestSampleUserRegisters(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got %v, want a valid record", err)
 	}
-	exitsr, ok := exitrec.(*perf.SampleGroupRecord)
+	exitsr, ok := exitrec.(*SampleGroupRecord)
 	if !ok {
 		t.Fatalf("got %T, want SampleGroupRecord", exitrec)
 	}

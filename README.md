@@ -1,9 +1,9 @@
 perf
 ========
 
-`import "acln.ro/perf"`
+`import "perf"`
 
-[![GoDoc](https://godoc.org/acln.ro/perf?status.svg)](https://godoc.org/acln.ro/perf)
+[![GoDoc](https://godoc.org/perf?status.svg)](https://godoc.org/perf)
 
 Temporary working tree for a tentative `golang.org/x/sys/unix/linux/perf` package. See also: https://github.com/golang/go/issues/24918
 

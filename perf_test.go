@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package perf_test
+package perf
 
 import (
 	"errors"
@@ -15,8 +15,6 @@ import (
 	"sync"
 	"testing"
 	"unsafe"
-
-	"acln.ro/perf"
 
 	"golang.org/x/sys/unix"
 )
@@ -31,37 +29,37 @@ func TestOpen(t *testing.T) {
 func testOpenBadGroup(t *testing.T) {
 	requires(t, paranoid(1), hardwarePMU)
 
-	ca := new(perf.Attr)
-	perf.CPUCycles.Configure(ca)
+	ca := new(Attr)
+	CPUCycles.Configure(ca)
 	ca.CountFormat.Group = true
 
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	cycles, err := perf.Open(ca, perf.CallingThread, perf.AnyCPU, nil)
+	cycles, err := Open(ca, CallingThread, AnyCPU, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	cycles.Close()
 
-	_, err = perf.Open(ca, perf.CallingThread, perf.AnyCPU, cycles)
+	_, err = Open(ca, CallingThread, AnyCPU, cycles)
 	if err == nil {
 		t.Fatal("successful Open with closed group *Event")
 	}
 
-	cycles = new(perf.Event) // uninitialized
-	_, err = perf.Open(ca, perf.CallingThread, perf.AnyCPU, cycles)
+	cycles = new(Event) // uninitialized
+	_, err = Open(ca, CallingThread, AnyCPU, cycles)
 	if err == nil {
 		t.Fatal("successful Open with closed group *Event")
 	}
 }
 
 func testOpenBadAttrType(t *testing.T) {
-	a := &perf.Attr{
+	a := &Attr{
 		Type: 42,
 	}
 
-	_, err := perf.Open(a, perf.CallingThread, perf.AnyCPU, nil)
+	_, err := Open(a, CallingThread, AnyCPU, nil)
 	if err == nil {
 		t.Fatal("got a valid *Event for bad Attr.Type 42")
 	}
@@ -74,12 +72,12 @@ func testOpenPopulatesLabel(t *testing.T) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	ca := &perf.Attr{
-		Type:   perf.HardwareEvent,
-		Config: uint64(perf.CPUCycles),
+	ca := &Attr{
+		Type:   HardwareEvent,
+		Config: uint64(CPUCycles),
 	}
 
-	cycles, err := perf.Open(ca, perf.CallingThread, perf.AnyCPU, nil)
+	cycles, err := Open(ca, CallingThread, AnyCPU, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,16 +99,16 @@ func testEventIDsDifferentByCPU(t *testing.T) {
 		t.Skip("only one CPU")
 	}
 
-	ca := new(perf.Attr)
-	perf.CPUCycles.Configure(ca)
+	ca := new(Attr)
+	CPUCycles.Configure(ca)
 
-	cycles0, err := perf.Open(ca, perf.CallingThread, 0, nil)
+	cycles0, err := Open(ca, CallingThread, 0, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer cycles0.Close()
 
-	cycles1, err := perf.Open(ca, perf.CallingThread, 1, nil)
+	cycles1, err := Open(ca, CallingThread, 1, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,7 +130,7 @@ func testEventIDsDifferentByCPU(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	if !perf.Supported() {
+	if !Supported() {
 		fmt.Fprintln(os.Stderr, "perf_event_open not supported")
 		os.Exit(2)
 	}
@@ -140,7 +138,7 @@ func TestMain(m *testing.M) {
 }
 
 // perfTestEnv holds and caches information about the testing environment
-// for package perf.
+// for package
 type perfTestEnv struct {
 	cap struct {
 		sync.Once
@@ -265,7 +263,7 @@ func (env *perfTestEnv) havePMU(u string) (bool, error) {
 		return false, err
 	}
 
-	_, err := perf.LookupEventType(u)
+	_, err := LookupEventType(u)
 	if err != nil {
 		env.pmu.missing[u] = err
 		return false, err

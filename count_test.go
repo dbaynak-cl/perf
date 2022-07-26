@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package perf_test
+package perf
 
 import (
 	"math/rand"
@@ -10,8 +10,6 @@ import (
 	"runtime"
 	"testing"
 	"time"
-
-	"acln.ro/perf"
 
 	"golang.org/x/sys/unix"
 )
@@ -31,17 +29,17 @@ func testHardwareCounters(t *testing.T) {
 }
 
 func testIPC(t *testing.T) {
-	g := perf.Group{
-		CountFormat: perf.CountFormat{
+	g := Group{
+		CountFormat: CountFormat{
 			ID: true,
 		},
 	}
-	g.Add(perf.Instructions, perf.CPUCycles)
+	g.Add(Instructions, CPUCycles)
 
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	hw, err := g.Open(perf.CallingThread, perf.AnyCPU)
+	hw, err := g.Open(CallingThread, AnyCPU)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,18 +74,18 @@ func testSoftwareCounters(t *testing.T) {
 var fault []byte
 
 func testPageFaults(t *testing.T) {
-	pfa := &perf.Attr{
-		CountFormat: perf.CountFormat{
+	pfa := &Attr{
+		CountFormat: CountFormat{
 			Running: true,
 			Enabled: true,
 		},
 	}
-	perf.PageFaults.Configure(pfa)
+	PageFaults.Configure(pfa)
 
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	faults, err := perf.Open(pfa, perf.CallingThread, perf.AnyCPU, nil)
+	faults, err := Open(pfa, CallingThread, AnyCPU, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,7 +111,7 @@ func testHardwareCacheCounters(t *testing.T) {
 	//
 	// $ ls /sys/bus/event_source/devices/*/type | xargs cat
 	//
-	// does not contain a 3, which is the value of perf.HardwareCacheEvent
+	// does not contain a 3, which is the value of HardwareCacheEvent
 	requires(t, paranoid(1))
 
 	t.Run("L1DataMissesBadLocality", testL1DataMissesBadLocality)
@@ -122,18 +120,18 @@ func testHardwareCacheCounters(t *testing.T) {
 }
 
 func testL1DataMissesBadLocality(t *testing.T) {
-	hwca := new(perf.Attr)
-	hwcc := perf.HardwareCacheCounter{
-		Cache:  perf.L1D,
-		Op:     perf.Read,
-		Result: perf.Miss,
+	hwca := new(Attr)
+	hwcc := HardwareCacheCounter{
+		Cache:  L1D,
+		Op:     Read,
+		Result: Miss,
 	}
 	hwcc.Configure(hwca)
 
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	l1dmisses, err := perf.Open(hwca, perf.CallingThread, perf.AnyCPU, nil)
+	l1dmisses, err := Open(hwca, CallingThread, AnyCPU, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -167,18 +165,18 @@ func testL1DataMissesBadLocality(t *testing.T) {
 }
 
 func testL1DataMissesGoodLocality(t *testing.T) {
-	hwca := new(perf.Attr)
-	hwcc := perf.HardwareCacheCounter{
-		Cache:  perf.L1D,
-		Op:     perf.Read,
-		Result: perf.Miss,
+	hwca := new(Attr)
+	hwcc := HardwareCacheCounter{
+		Cache:  L1D,
+		Op:     Read,
+		Result: Miss,
 	}
 	hwcc.Configure(hwca)
 
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	l1dmisses, err := perf.Open(hwca, perf.CallingThread, perf.AnyCPU, nil)
+	l1dmisses, err := Open(hwca, CallingThread, AnyCPU, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -239,17 +237,17 @@ func newValuer(n int) valuer {
 }
 
 func testL1Group(t *testing.T) {
-	caches := []perf.Cache{perf.L1D, perf.L1I}
-	ops := []perf.CacheOp{perf.Read}
-	results := []perf.CacheOpResult{perf.Miss}
+	caches := []Cache{L1D, L1I}
+	ops := []CacheOp{Read}
+	results := []CacheOpResult{Miss}
 
-	var g perf.Group
-	g.Add(perf.HardwareCacheCounters(caches, ops, results)...)
+	var g Group
+	g.Add(HardwareCacheCounters(caches, ops, results)...)
 
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	l1, err := g.Open(perf.CallingThread, perf.AnyCPU)
+	l1, err := g.Open(CallingThread, AnyCPU)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -308,8 +306,8 @@ type singleTracepointTest struct {
 }
 
 func (tt singleTracepointTest) run(t *testing.T) {
-	tp := perf.Tracepoint(tt.category, tt.event)
-	attr := new(perf.Attr)
+	tp := Tracepoint(tt.category, tt.event)
+	attr := new(Attr)
 	if err := tp.Configure(attr); err != nil {
 		t.Fatal(err)
 	}
@@ -317,7 +315,7 @@ func (tt singleTracepointTest) run(t *testing.T) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	ev, err := perf.Open(attr, perf.CallingThread, perf.AnyCPU, nil)
+	ev, err := Open(attr, CallingThread, AnyCPU, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -341,14 +339,14 @@ func (tt singleTracepointTest) String() string {
 func testIoctlAndCountIDsMatch(t *testing.T) {
 	requires(t, paranoid(1), softwarePMU)
 
-	pfa := new(perf.Attr)
-	perf.PageFaults.Configure(pfa)
+	pfa := new(Attr)
+	PageFaults.Configure(pfa)
 	pfa.CountFormat.ID = true
 
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	faults, err := perf.Open(pfa, perf.CallingThread, perf.AnyCPU, nil)
+	faults, err := Open(pfa, CallingThread, AnyCPU, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
