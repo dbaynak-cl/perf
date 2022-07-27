@@ -1064,7 +1064,9 @@ func (mr *Mmap2Record) DecodeFrom(raw *RawRecord, ev *Event) {
 	f.uint64(&mr.InodeGeneration)
 	f.uint32(&mr.Prot, &mr.Flags)
 	f.string(&mr.Filename)
-	f.idCond(ev.a.Options.SampleIDAll, &mr.SampleID, ev.a.SampleFormat)
+	f2 := raw.fields()
+	f3 := f2[len(f2)-ev.a.SampleFormat.sizeof():]
+	f3.idCond(ev.a.Options.SampleIDAll, &mr.SampleID, ev.a.SampleFormat)
 }
 
 // Executable returns a boolean indicating whether the mapping is executable.
